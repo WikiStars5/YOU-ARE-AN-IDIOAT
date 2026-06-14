@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { registerVisitorIfNeeded, getVisitorCount } from "./firebase";
+import { registerVisitorIfNeeded } from "./firebase";
 
 const REMOTE_AUDIO_URL = "https://firebasestorage.googleapis.com/v0/b/you-are-an-idioat.firebasestorage.app/o/You%20are%20an%20idiot__%20%5B48rz8udZBmQ%5D%20(1).mp3?alt=media&token=96bb5d40-9c3f-4a6d-85c9-d8d2f38e12b8";
 const CACHE_NAME = "idiot-audio-cache";
@@ -8,7 +8,6 @@ export default function App() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioSrc, setAudioSrc] = useState<string>("");
-  const [visitorCount, setVisitorCount] = useState<number | null>(null);
 
   // Check, fetch, and cache the audio blob locally
   useEffect(() => {
@@ -41,11 +40,8 @@ export default function App() {
     }
 
     async function initFirebaseTracking() {
-      // Register visitor on first-time access
+      // Register visitor on first-time access silently in the background
       await registerVisitorIfNeeded();
-      // Fetch the latest count and display it
-      const count = await getVisitorCount();
-      setVisitorCount(count);
     }
 
     initCachedAudio();
@@ -147,14 +143,6 @@ export default function App() {
           </div>
 
         </div>
-
-        {/* Beautiful Elegant Monospace Visitor Counter */}
-        {visitorCount !== null && (
-          <div className="text-center font-mono text-sm tracking-widest uppercase opacity-90 select-none bg-black/10 px-4 py-2 rounded-full border border-black/5 dark:bg-white/10 dark:border-white/5 shadow-sm">
-            <span>IDIOTAS CONECTADOS: </span>
-            <span className="font-bold text-rose-500 scale-105 inline-block animate-pulse">{visitorCount.toLocaleString()}</span>
-          </div>
-        )}
 
       </div>
 
