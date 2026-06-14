@@ -4,35 +4,44 @@ export default function App() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Automatically attempt to play on load
+  // Automatically attempt to play on load and register global events to unblock immediately on any action
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.play()
-        .then(() => {
-          setIsPlaying(true);
-        })
-        .catch((err) => {
-          console.log("Autoplay blocked by browser policy. Interaction will unblock audio.", err);
-        });
-    }
-  }, []);
+    const startAudio = () => {
+      if (audioRef.current) {
+        audioRef.current.play()
+          .then(() => {
+            setIsPlaying(true);
+            removeListeners();
+          })
+          .catch((err) => {
+            console.log("Autoplay blocked or pending interaction:", err);
+          });
+      }
+    };
 
-  // Handle unblocking audio when clicking anywhere
-  const handleInteraction = () => {
-    if (audioRef.current && !isPlaying) {
-      audioRef.current.play()
-        .then(() => {
-          setIsPlaying(true);
-        })
-        .catch((err) => {
-          console.error("Playback error:", err);
-        });
-    }
-  };
+    const removeListeners = () => {
+      window.removeEventListener("click", startAudio);
+      window.removeEventListener("touchstart", startAudio);
+      window.removeEventListener("keydown", startAudio);
+      window.removeEventListener("mousedown", startAudio);
+    };
+
+    // Attach listeners
+    window.addEventListener("click", startAudio);
+    window.addEventListener("touchstart", startAudio);
+    window.addEventListener("keydown", startAudio);
+    window.addEventListener("mousedown", startAudio);
+
+    // Attempt immediately on mount
+    startAudio();
+
+    return () => {
+      removeListeners();
+    };
+  }, []);
 
   return (
     <div 
-      onClick={handleInteraction}
       className="flash-strobe min-h-screen w-full flex flex-col justify-center items-center select-none p-4 font-serif transition-all cursor-pointer"
     >
       {/* Loop Audio player using the requested Firebase Storage audio link */}
