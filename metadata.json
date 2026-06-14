@@ -1,0 +1,6 @@
+{
+  "name": "Laughing Faces",
+  "description": "Una aplicación simple con tres caras riendo y un mensaje.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
