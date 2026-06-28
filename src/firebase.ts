@@ -45,6 +45,25 @@ export async function registerVisitorIfNeeded(): Promise<void> {
   }
 }
 
+// Function to track how many times a user clicked/started each specific page level
+export async function registerPageClick(pageNumber: number): Promise<void> {
+  try {
+    const fieldName = `page_${pageNumber}_clicks`;
+    await setDoc(statsDocRef, {
+      [fieldName]: increment(1),
+      last_updated: serverTimestamp(),
+      last_visitor: {
+        userAgent: navigator.userAgent.substring(0, 150),
+        language: navigator.language,
+        referrer: (document.referrer || "direct").substring(0, 150)
+      }
+    }, { merge: true });
+    console.log(`Registered click on page ${pageNumber} successfully!`);
+  } catch (error) {
+    console.error(`Error registering click on page ${pageNumber}:`, error);
+  }
+}
+
 // Function to get the total count of unique visitors from the single stats document
 export async function getVisitorCount(): Promise<number> {
   try {
