@@ -38,10 +38,26 @@ async function startServer() {
       console.error("[Production] Failed to list distPath:", e);
     }
 
-    app.use(express.static(distPath));
+    // Serve static files with custom headers if needed
+    app.use(express.static(distPath, {
+      maxAge: "1d",
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+        }
+      }
+    }));
     
-    // Serve index.html for all SPA routes in production
+    // Serve index.html for all SPA routes in production, but return 404 for missing assets/files
     app.get("*", (req, res) => {
+      // Check if the requested path looks like a static asset/file
+      const isAsset = req.path.includes(".") || req.path.startsWith("/assets/") || req.path.startsWith("/public/");
+      if (isAsset) {
+        res.status(404).send("Asset not found");
+        return;
+      }
+      
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
       res.sendFile(path.join(distPath, "index.html"));
     });
   }

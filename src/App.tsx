@@ -10,9 +10,27 @@ export default function App() {
   const [audioSrc, setAudioSrc] = useState<string>("");
   const [started, setStarted] = useState(false);
 
-  // Determine current prank stage/page from the query parameters
-  const pageParam = new URLSearchParams(window.location.search).get("page");
-  const currentPage = pageParam ? parseInt(pageParam, 10) : 1;
+  // Determine current prank stage/page from the query parameters safely
+  const getCurrentPageSafe = (): number => {
+    try {
+      if (typeof window !== "undefined" && window.location && window.location.search) {
+        const search = window.location.search;
+        // Fallback simple parsing if URLSearchParams is not supported
+        if (typeof URLSearchParams !== "undefined") {
+          const pageParam = new URLSearchParams(search).get("page");
+          if (pageParam) return parseInt(pageParam, 10) || 1;
+        } else {
+          const match = search.match(/[?&]page=([^&]*)/);
+          if (match && match[1]) return parseInt(match[1], 10) || 1;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to parse page parameter safely, defaulting to page 1:", e);
+    }
+    return 1;
+  };
+
+  const currentPage = getCurrentPageSafe();
 
   // Check, fetch, and cache the audio blob locally
   useEffect(() => {
@@ -76,7 +94,7 @@ export default function App() {
         });
     }
 
-    // Troll popup routing logic
+    // Troll popup routing logic with fully robust mobile-redirect fallback if pop-ups are blocked
     try {
       const baseUrl = window.location.origin + window.location.pathname;
       const popupOptions = "width=420,height=320,left=150,top=150,menubar=no,toolbar=no,location=no,status=no";
@@ -85,15 +103,36 @@ export default function App() {
         // Page 1 opens 2 popups pointing to Page 2
         const p1 = window.open(`${baseUrl}?page=2`, "_blank", popupOptions);
         const p2 = window.open(`${baseUrl}?page=2`, "_blank", popupOptions);
-        if (p1) console.log("Troll window 1 (page 2) opened successfully!");
-        if (p2) console.log("Troll window 2 (page 2) opened successfully!");
+        
+        const popupsBlocked = !p1 && !p2;
+        if (popupsBlocked) {
+          console.log("Pop-ups blocked on Page 1. Initiating mobile-redirect fallback...");
+          setTimeout(() => {
+            window.location.href = `${baseUrl}?page=2`;
+          }, 1500); // 1.5s of strobe fun before redirecting
+        } else {
+          if (p1) console.log("Troll window 1 (page 2) opened successfully!");
+          if (p2) console.log("Troll window 2 (page 2) opened successfully!");
+        }
       } else if (currentPage === 2) {
         // Page 2 opens 1 popup pointing to Page 3
         const p3 = window.open(`${baseUrl}?page=3`, "_blank", popupOptions);
-        if (p3) console.log("Troll window 3 (page 3) opened successfully!");
+        
+        if (!p3) {
+          console.log("Pop-up blocked on Page 2. Initiating mobile-redirect fallback...");
+          setTimeout(() => {
+            window.location.href = `${baseUrl}?page=3`;
+          }, 1200); // 1.2s of strobe before redirecting to the final screen
+        } else {
+          console.log("Troll window 3 (page 3) opened successfully!");
+        }
       }
     } catch (popupError) {
-      console.warn("Could not open pop-up windows automatically:", popupError);
+      console.warn("Could not open pop-up windows automatically, falling back:", popupError);
+      const baseUrl = window.location.origin + window.location.pathname;
+      setTimeout(() => {
+        window.location.href = `${baseUrl}?page=${currentPage + 1}`;
+      }, 1500);
     }
   };
 
