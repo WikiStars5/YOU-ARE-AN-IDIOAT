@@ -100,8 +100,8 @@ export default function App() {
   // Determine title text based on page level
   const titleText = currentPage === 3 ? "You really are an idiot." : "you are an idiot";
   
-  // Decide if title is visible
-  const isTitleVisible = started || currentPage === 3;
+  // Decide if title is visible (hidden on Page 1 until started, visible immediately on Page 2 and 3)
+  const isTitleVisible = started || currentPage > 1;
 
   return (
     <div 
