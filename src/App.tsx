@@ -8,6 +8,7 @@ export default function App() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioSrc, setAudioSrc] = useState<string>("");
+  const [started, setStarted] = useState(false);
 
   // Check, fetch, and cache the audio blob locally
   useEffect(() => {
@@ -48,48 +49,44 @@ export default function App() {
     initFirebaseTracking();
   }, []);
 
-  // Automatically attempt to play once audioSrc is loaded or whenever user interacts
-  useEffect(() => {
-    if (!audioSrc) return;
+  // Handle manual activation
+  const handleStartPrank = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    
+    setStarted(true);
 
-    const startAudio = () => {
-      if (audioRef.current) {
-// Set source on the actual ref to avoid reset states on render
-        audioRef.current.play()
-          .then(() => {
-            setIsPlaying(true);
-            removeListeners();
-          })
-          .catch((err) => {
-            console.log("Autoplay blocked or pending interaction:", err);
-          });
-      }
-    };
+    // Play audio immediately
+    if (audioRef.current) {
+      audioRef.current.play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch((err) => {
+          console.error("Audio trigger failed:", err);
+        });
+    }
 
-    const removeListeners = () => {
-      window.removeEventListener("click", startAudio);
-      window.removeEventListener("touchstart", startAudio);
-      window.removeEventListener("keydown", startAudio);
-      window.removeEventListener("mousedown", startAudio);
-    };
-
-    // Attach listeners to instantly play on any user gesture
-    window.addEventListener("click", startAudio);
-    window.addEventListener("touchstart", startAudio);
-    window.addEventListener("keydown", startAudio);
-    window.addEventListener("mousedown", startAudio);
-
-    // Initial silent autoplay attempt
-    startAudio();
-
-    return () => {
-      removeListeners();
-    };
-  }, [audioSrc]);
+    // Attempt to open 2 small troll pop-ups under the trusted click context
+    try {
+      const currentUrl = window.location.href;
+      const popupOptions = "width=420,height=320,left=150,top=150,menubar=no,toolbar=no,location=no,status=no";
+      
+      const p1 = window.open(currentUrl, "_blank", popupOptions);
+      const p2 = window.open(currentUrl, "_blank", popupOptions);
+      
+      if (p1) console.log("Troll window 1 opened successfully!");
+      if (p2) console.log("Troll window 2 opened successfully!");
+    } catch (popupError) {
+      console.warn("Could not open pop-up windows automatically (likely blocked by browser settings):", popupError);
+    }
+  };
 
   return (
     <div 
-      className="flash-strobe min-h-screen w-full flex flex-col justify-center items-center select-none p-4 font-serif transition-all cursor-pointer"
+      className={`${started ? "flash-strobe" : "bg-neutral-50 text-neutral-900"} min-h-screen w-full flex flex-col justify-center items-center select-none p-4 font-serif transition-all`}
+      onClick={started ? undefined : () => handleStartPrank()}
     >
       {/* Loop Audio player using local cached Object URL source once ready */}
       {audioSrc && (
@@ -97,15 +94,17 @@ export default function App() {
           ref={audioRef}
           src={audioSrc}
           loop
-          autoPlay
         />
       )}
 
       {/* Centered main container layout matching the exact image mockup */}
       <div className="flex flex-col items-center gap-14 max-w-xl w-full">
         
-        {/* Title phrase in exact natural lower case */}
-        <h1 className="text-5xl sm:text-6xl md:text-7xl font-normal tracking-tight text-center select-none">
+        {/* Title phrase in exact natural lower case - hidden until started */}
+        <h1 
+          className="text-5xl sm:text-6xl md:text-7xl font-normal tracking-tight text-center select-none transition-all duration-300"
+          style={{ visibility: started ? "visible" : "hidden", opacity: started ? 1 : 0 }}
+        >
           you are an idiot
         </h1>
 
@@ -144,12 +143,22 @@ export default function App() {
 
         </div>
 
+        {/* Start Button shown below the smileys only before activation */}
+        {!started && (
+          <button
+            onClick={(e) => handleStartPrank(e)}
+            className="px-10 py-4 font-sans text-lg font-medium tracking-widest uppercase text-white bg-rose-600 hover:bg-rose-700 active:scale-95 transition-all rounded-full shadow-lg hover:shadow-xl cursor-pointer"
+          >
+            {audioSrc ? "Iniciar / Play ▶" : "Preparando... 🔄"}
+          </button>
+        )}
+
       </div>
 
-      {/* Subtle interaction cue if browser blocks early autoplay */}
-      {!isPlaying && (
-        <div className="absolute bottom-6 text-xs font-sans tracking-widest opacity-60 animate-pulse text-center">
-          {audioSrc ? "Haz clic en cualquier parte para activar la música 🔊" : "Preparando audio... 🔄"}
+      {/* Subtle footer tip before starting */}
+      {!started && (
+        <div className="absolute bottom-6 text-xs font-sans tracking-widest opacity-60 text-center">
+          Sube el volumen y presiona el botón para comenzar 🔊
         </div>
       )}
     </div>
