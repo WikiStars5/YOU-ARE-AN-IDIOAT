@@ -40,13 +40,7 @@ export default function App() {
       }
     }
 
-    async function initFirebaseTracking() {
-      // Register visitor on first-time access silently in the background
-      await registerVisitorIfNeeded();
-    }
-
     initCachedAudio();
-    initFirebaseTracking();
   }, []);
 
   // Handle manual activation
@@ -56,6 +50,11 @@ export default function App() {
     }
     
     setStarted(true);
+
+    // Register visitor on click for unique devices
+    registerVisitorIfNeeded().catch((err) => {
+      console.error("Tracking registration failed:", err);
+    });
 
     // Play audio immediately
     if (audioRef.current) {
