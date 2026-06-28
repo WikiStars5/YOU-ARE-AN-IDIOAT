@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 
 async function startServer() {
@@ -23,7 +24,20 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), "dist");
+    // Robust path resolution: if bundled, __dirname points to /app/dist where assets and index.html reside
+    const distPath = __dirname.endsWith("dist") ? __dirname : path.join(process.cwd(), "dist");
+    
+    console.log(`[Production] Static files path: ${distPath}`);
+    try {
+      if (fs.existsSync(distPath)) {
+        console.log(`[Production] distPath exists. Contents:`, fs.readdirSync(distPath));
+      } else {
+        console.warn(`[Production] distPath does NOT exist!`);
+      }
+    } catch (e) {
+      console.error("[Production] Failed to list distPath:", e);
+    }
+
     app.use(express.static(distPath));
     
     // Serve index.html for all SPA routes in production
