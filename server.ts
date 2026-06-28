@@ -58,6 +58,28 @@ async function startServer() {
       }
       
       res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      
+      try {
+        const indexPath = path.join(distPath, "index.html");
+        if (fs.existsSync(indexPath)) {
+          let html = fs.readFileSync(indexPath, "utf8");
+          
+          // Determine protocol and host to generate absolute URLs for crawlers (like WhatsApp)
+          const protocol = req.headers["x-forwarded-proto"] || req.protocol || "https";
+          const host = req.get("host");
+          const baseUrl = `${protocol}://${host}`;
+          
+          // Dynamically replace relative image path with absolute URL
+          html = html.replace(/content="\/happy_face\.jpg"/g, `content="${baseUrl}/happy_face.jpg"`);
+          
+          res.send(html);
+          return;
+        }
+      } catch (err) {
+        console.error("Error dynamically injecting absolute OG image:", err);
+      }
+      
+      // Fallback
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
